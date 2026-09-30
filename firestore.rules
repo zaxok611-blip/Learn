@@ -1,0 +1,76 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: users
+    // Document ID: userId (from Auth)
+    // Fields:
+    //   - name: string (required) - display name
+    //   - imageUrl: string (optional) - profile image URL
+    //   - email: string (required) - email address
+    //   - createdAt: timestamp (required) - creation time
+    //
+    // Collection: users/{userId}/favorites
+    // Document ID: auto-generated
+    // Fields:
+    //   - userId: string (required) - owner's UID
+    //   - wordId: string (required) - word ID
+    //   - word: string (required) - word text
+    //   - level: string (required) - CEFR level
+    //   - createdAt: timestamp (required) - creation time
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isValidUserProfile(data) {
+      return data.keys().hasAll(['name', 'email', 'createdAt']) &&
+             data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
+             data.email is string && (data.email == "" || data.email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$")) &&
+             data.createdAt is timestamp;
+    }
+
+    function isValidFavorite(data) {
+      return data.keys().hasAll(['userId', 'wordId', 'word', 'level', 'createdAt']) &&
+             data.userId == request.auth.uid &&
+             data.wordId is string && data.wordId.size() > 0 &&
+             data.word is string && data.word.size() > 0 &&
+             data.level in ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'] &&
+             data.createdAt is timestamp;
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /publicData/{document=**} {
+      allow read, write: if true;
+    }
+
+    match /users/{userId} {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId) && isValidUserProfile(request.resource.data);
+      allow update: if isOwner(userId) && isValidUserProfile(request.resource.data) &&
+                      request.resource.data.email == resource.data.email &&
+                      request.resource.data.createdAt == resource.data.createdAt;
+
+      match /favorites/{favoriteId} {
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidFavorite(request.resource.data);
+        allow delete: if isOwner(userId);
+      }
+    }
+  }
+}

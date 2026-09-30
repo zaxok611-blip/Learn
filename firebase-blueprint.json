@@ -1,0 +1,69 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "User Profile",
+      "description": "Stores user profile information.",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The user's display name."
+        },
+        "imageUrl": {
+          "type": "string",
+          "description": "The user's profile image URL."
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "The user's email address."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the profile was created."
+        }
+      },
+      "required": ["name", "email", "createdAt"]
+    },
+    "Favorite": {
+      "title": "Favorite Word",
+      "description": "A word favorited by a user.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "The ID of the user who favorited the word."
+        },
+        "wordId": {
+          "type": "string",
+          "description": "The ID of the favorited word."
+        },
+        "word": {
+          "type": "string",
+          "description": "The favorited word text."
+        },
+        "level": {
+          "type": "string",
+          "description": "The CEFR level of the word."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When it was favorited."
+        }
+      },
+      "required": ["userId", "wordId", "word", "level", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "User profile documents."
+    },
+    "/users/{userId}/favorites/{favoriteId}": {
+      "schema": "Favorite",
+      "description": "User's favorite words."
+    }
+  }
+}
